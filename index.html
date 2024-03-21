@@ -19,46 +19,62 @@
 </head>
 <body class="text-center">
     <h1>Scanner de QR Code</h1>
-    <button class="btn btn-primary" onclick="abrirCamera()">Abrir Câmera</button>
+    <button id="toggleCameraBtn" class="btn btn-primary" onclick="abrirCamera()">Abrir Câmera</button>
+    <button id="flipCameraBtn" class="btn btn-secondary d-none" onclick="flipCamera()">Virar Câmera</button>
     <div id="resultado"></div>
 
     <script>
         let cameraAtivada = false;
+        let stream = null;
 
-        function abrirCamera() {
+        async function abrirCamera() {
             if (!cameraAtivada) {
-                cameraAtivada = true; // Apenas
-                if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices) {
-                    navigator.mediaDevices.getUserMedia({ video: true })
-                        .then(function (stream) {
-                            const video = document.createElement('video');
-                            video.srcObject = stream;
-                            document.body.appendChild(video);
-                            video.play();
-
-                            const canvas = document.createElement('canvas');
-                            const context = canvas.getContext('2d');
-                            video.addEventListener('loadedmetadata', function () {
-                                canvas.width = video.videoWidth;
-                                canvas.height = video.videoHeight;
-                                setInterval(() => {
-                                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                                    const qrCodeResult = decodeQRCode(imageData);
-                                    if (qrCodeResult) {
-                                        document.getElementById('resultado').innerText = qrCodeResult;
-                                        window.location.href = qrCodeResult; // Redireciona para o link do QR code
-                                    }
-                                }, 1000);
-                            });
-                        })
-                        .catch(function (error) {
-                            console.error('Erro ao acessar a câmera:', error);
-                        });
-                } else {
-                    alert('Seu navegador não suporta a API de câmera.');
+                cameraAtivada = true;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    exibirCamera(stream);
+                } catch (error) {
+                    console.error('Erro ao acessar a câmera:', error);
+                    alert('Erro ao acessar a câmera.');
+                    cameraAtivada = false;
                 }
             }
+        }
+
+        function exibirCamera(stream) {
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            document.body.appendChild(video);
+            video.play();
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            video.addEventListener('loadedmetadata', function () {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                setInterval(() => {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const qrCodeResult = decodeQRCode(imageData);
+                    if (qrCodeResult) {
+                        document.getElementById('resultado').innerText = qrCodeResult;
+                        window.location.href = qrCodeResult; // Redireciona para o link do QR code
+                    }
+                }, 1000);
+            });
+
+            // Mostrar o botão de virar a câmera apenas em dispositivos móveis
+            if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                document.getElementById('flipCameraBtn').classList.remove('d-none');
+            }
+        }
+
+        async function flipCamera() {
+            stream.getTracks().forEach(track => {
+                track.stop();
+            });
+            cameraAtivada = false;
+            await abrirCamera();
         }
 
         function decodeQRCode(imageData) {
@@ -72,3 +88,4 @@
     </script>
 </body>
 </html>
+
