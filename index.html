@@ -20,7 +20,6 @@
 <body class="text-center">
     <h1>Scanner de QR Code</h1>
     <button id="toggleCameraBtn" class="btn btn-primary" onclick="abrirCamera()">Abrir Câmera</button>
-    <button id="flipCameraBtn" class="btn btn-secondary d-none" onclick="flipCamera()">Virar Câmera</button>
     <div id="resultado"></div>
 
     <script>
@@ -31,7 +30,11 @@
             if (!cameraAtivada) {
                 cameraAtivada = true;
                 try {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    // Solicitar a câmera traseira em dispositivos móveis
+                    const constraints = {
+                        video: { facingMode: 'environment' }
+                    };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
                     exibirCamera(stream);
                 } catch (error) {
                     console.error('Erro ao acessar a câmera:', error);
@@ -62,19 +65,6 @@
                     }
                 }, 1000);
             });
-
-            // Mostrar o botão de virar a câmera apenas em dispositivos móveis
-            if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                document.getElementById('flipCameraBtn').classList.remove('d-none');
-            }
-        }
-
-        async function flipCamera() {
-            stream.getTracks().forEach(track => {
-                track.stop();
-            });
-            cameraAtivada = false;
-            await abrirCamera();
         }
 
         function decodeQRCode(imageData) {
@@ -88,4 +78,3 @@
     </script>
 </body>
 </html>
-
